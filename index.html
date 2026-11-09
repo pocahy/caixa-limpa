@@ -622,7 +622,10 @@ function vFoco(){
   else if(P.run)ctrl=`<button class="btn primary" data-act="pom-pause">Pausar</button>${P.phase==="focus"&&task?`<button class="btn" data-act="pom-taskdone">Terminei a tarefa</button>`:""}${isBrk?`<button class="btn" data-act="pom-focus">Pular pausa</button>`:""}<button class="btn ghost" data-act="pom-stop">Encerrar</button>`;
   else ctrl=`<button class="btn primary" data-act="pom-resume">Continuar</button><button class="btn ghost" data-act="pom-stop">Encerrar</button>`;
   const extra=task&&task.list!=="next"?`<option value="${task.id}" selected>${esc(task.title)}</option>`:"";
-  const opts=next.map(i=>`<option value="${i.id}" ${P.task===i.id?"selected":""}>${esc(i.title)}${i.ctx?" ("+esc(i.ctx)+")":""}</option>`).join("");
+  const optOf=i=>`<option value="${i.id}" ${P.task===i.id?"selected":""}>${esc(i.title)}${i.ctx?" ("+esc(i.ctx)+")":""}</option>`;
+  const pgroups=projects().filter(p=>next.some(i=>i.project===p.id)).sort(byCreated);
+  const loose=next.filter(i=>!i.project||!projName(i.project));
+  const opts=pgroups.map(p=>`<optgroup label="${esc(p.title)}">${next.filter(i=>i.project===p.id).map(optOf).join("")}</optgroup>`).join("")+(loose.length?(pgroups.length?`<optgroup label="Sem projeto">${loose.map(optOf).join("")}</optgroup>`:loose.map(optOf).join("")):"");
   let h=`<h1 class="view">Foco</h1><p class="lede">Um pomodoro é ${s.focus} minutos em uma única próxima ação, seguidos de uma pausa curta. A cada ${s.every}, uma pausa longa. Se algo surgir no meio, capture no campo do topo: vai para a caixa de entrada e você volta ao foco.</p>
   <section class="timer ${isBrk?"brk":P.phase==="focus"?"on":""}" aria-label="Pomodoro">
    <div class="ph"><span>${esc(ph)}</span><span class="dots" title="${filled} de ${s.every} até a pausa longa" aria-label="${filled} de ${s.every} até a pausa longa">${Array.from({length:s.every},(_,k)=>`<i class="${k<filled?"on":""}"></i>`).join("")}</span></div>
@@ -636,7 +639,7 @@ function vFoco(){
   const intr=(day.s||[]).reduce((a,x)=>a+(x.intr||0),0);
   h+=`<h2 class="sec">Hoje</h2><div class="stats"><div><span class="sv mono">${day.n}</span><span class="sl">${day.n===1?"pomodoro":"pomodoros"}</span></div><div><span class="sv mono">${Math.floor(day.min/60)}h${String(day.min%60).padStart(2,"0")}</span><span class="sl">de foco</span></div><div><span class="sv mono">${intr}</span><span class="sl">interrupções capturadas</span></div></div>`;
   if(day.s&&day.s.length){const g={};day.s.forEach(x=>{const k=x.t||"_"+x.title;g[k]=g[k]||{title:x.title,n:0,t:x.t};g[k].n++});
-    h+=`<ul class="list">${Object.values(g).map(x=>{const it=x.t&&S.items.get(x.t);return `<li class="row"><span class="row-main"><span class="t">${esc(it?it.title:x.title)}</span></span><span class="row-side"><span class="chip mono">${x.n} pom</span></span></li>`}).join("")}</ul>`}
+    h+=`<ul class="list">${Object.values(g).map(x=>{const it=x.t&&S.items.get(x.t);return `<li class="row"><span class="row-main"><span class="t">${esc(it?it.title:x.title)}</span>${it&&projName(it.project)?`<span class="chips"><span class="chip proj">${esc(projName(it.project))}</span></span>`:""}</span><span class="row-side"><span class="chip mono">${x.n} pom</span></span></li>`}).join("")}</ul>`}
   const days=Array.from({length:7},(_,k)=>addDays(k-6)),mx=Math.max(1,...days.map(d=>(log[d]||{}).n||0));
   h+=`<h2 class="sec">Últimos 7 dias</h2><div class="week">${days.map(d=>{const n=(log[d]||{}).n||0;return `<div class="wd ${d===today()?"today":""}"><span class="wv mono">${n||"·"}</span><span class="wb"><i style="height:${(n/mx*100).toFixed(1)}%"></i></span><span class="wl mono">${esc(new Date(d+"T12:00").toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","").slice(0,3))}</span></div>`}).join("")}</div>`;
   const sel=(k,lbl,arr)=>`<div class="field"><label for="ps-${k}">${lbl}</label><select id="ps-${k}" class="sel" data-ps="${k}">${arr.map(v=>`<option value="${v}" ${s[k]==v?"selected":""}>${k==="every"?v+" pomodoros":v+" min"}</option>`).join("")}</select></div>`;
@@ -649,7 +652,7 @@ function renderPomBar(){const b=$("#pombar"),show=P.phase!=="idle"&&ui.view!=="f
   if(!show){b.hidden=true;b.innerHTML="";return}
   const task=P.task&&S.items.get(P.task);
   const lbl=P.await==="focus-end"?"Pomodoro concluído":P.await==="break-end"?"Pausa terminada":({focus:"Foco",short:"Pausa",long:"Pausa longa"}[P.phase]||"")+(P.run?"":" (pausado)");
-  b.innerHTML=`<span class="pc mono" data-pclock>${pfmt(pleft())}</span><span class="pt"><b>${esc(lbl)}</b>${task?" · "+esc(task.title):""}</span>${P.await?"":P.run?`<button type="button" data-act="pom-pause">Pausar</button>`:`<button type="button" data-act="pom-resume">Continuar</button>`}<button type="button" data-act="pom-open">Abrir</button>`;
+  b.innerHTML=`<span class="pc mono" data-pclock>${pfmt(pleft())}</span><span class="pt"><b>${esc(lbl)}</b>${task?" · "+esc(task.title)+(projName(task.project)?" ("+esc(projName(task.project))+")":""):""}</span>${P.await?"":P.run?`<button type="button" data-act="pom-pause">Pausar</button>`:`<button type="button" data-act="pom-resume">Continuar</button>`}<button type="button" data-act="pom-open">Abrir</button>`;
   b.hidden=false}
 
 /* ---------- render ---------- */
