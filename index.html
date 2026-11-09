@@ -153,6 +153,35 @@ textarea.inp{width:100%;min-height:90px;resize:vertical}
 #toast button{background:none;border:0;color:var(--accent-soft);font-weight:700;padding:0}
 
 .linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;font-size:inherit}
+/* Clientes, Hoje, Quadro */
+a.btn{text-decoration:none;color:var(--ink);display:inline-block}
+.chip.cli{background:transparent;border:1px solid var(--rest);color:var(--rest)}
+.btn.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.hcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.hcard.wide{grid-column:1/-1}
+.hcard .list{border-top:0}
+.hcard .row:last-child{border-bottom:0}
+.hcard h2.sec{margin:0 0 4px}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}
+.ccard{display:flex;flex-direction:column;gap:10px}
+.cc-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cc-h h3{font-family:var(--f-display);font-weight:600;font-size:1.25rem;margin:0;overflow-wrap:anywhere}
+.clist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.clist li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.clist li span:first-child{min-width:0;overflow-wrap:anywhere}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:12px;overflow-x:auto;padding-bottom:10px;align-items:start}
+.col{background:var(--surface-2);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:140px}
+.col.over{outline:2px dashed var(--accent);outline-offset:-2px}
+.col-h{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;margin:2px 4px;display:flex;justify-content:space-between;gap:8px}
+.col-b{display:flex;flex-direction:column;gap:8px}
+.col-empty{margin:4px;opacity:.7}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;cursor:grab}
+.qcard:hover{border-color:var(--accent)}
+.qcard.dragging{opacity:.45}
+.qt{font-weight:700;overflow-wrap:anywhere;line-height:1.3}
+.qm{font-size:13px;color:var(--rest);overflow-wrap:anywhere}
+@media (max-width:760px){.hgrid{grid-template-columns:minmax(0,1fr)}}
 /* Pomodoro */
 .timer{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:22px 20px;display:flex;flex-direction:column;gap:14px;margin-bottom:8px}
 .timer.on{border-color:var(--accent)}
@@ -230,11 +259,14 @@ const TIMES=[5,15,30,60,120];
 const LISTNAME={inbox:"Caixa de entrada",next:"Próximas ações",waiting:"Aguardando",scheduled:"Agendado",someday:"Algum dia / talvez",reference:"Referência",done:"Concluído"};
 const VIEWS=[
  {id:"caixa",label:"Caixa de entrada",grp:"Capturar e processar"},
- {id:"proximas",label:"Próximas ações",grp:"Fazer"},
+ {id:"hoje",label:"Hoje",grp:"Fazer"},
+ {id:"proximas",label:"Próximas ações"},
  {id:"foco",label:"Foco (Pomodoro)"},
  {id:"agenda",label:"Agendado"},
  {id:"aguardando",label:"Aguardando"},
- {id:"projetos",label:"Projetos",grp:"Organizar"},
+ {id:"quadro",label:"Quadro",grp:"Organizar"},
+ {id:"clientes",label:"Clientes"},
+ {id:"projetos",label:"Projetos"},
  {id:"algum-dia",label:"Algum dia"},
  {id:"referencia",label:"Referência"},
  {id:"revisao",label:"Revisão semanal",grp:"Revisar"},
@@ -269,7 +301,7 @@ function relDate(s){const d=dayDiff(s);if(d===0)return"hoje";if(d===1)return"ama
 
 /* ---------- estado ---------- */
 const S={items:new Map(),loaded:false};
-const ui={view:"caixa",ctx:"all",energy:"all",time:"all",open:{},clarify:null,pa:{},confirmClear:false,statusMsg:""};
+const ui={view:"hoje",cli:"all",qProj:"all",ctx:"all",energy:"all",time:"all",open:{},clarify:null,pa:{},confirmClear:false,statusMsg:""};
 const store={mode:"local",put:()=>{},del:()=>{}};
 const all=()=>[...S.items.values()];
 const items=()=>all().filter(x=>x.kind==="item");
@@ -354,15 +386,16 @@ async function boot(){
 /* ---------- exemplos ---------- */
 function examples(){
   const now=Date.now(),mk=(o)=>({id:newId(),kind:"item",created:now,updated:now,ex:true,...o});
-  const p1=newId(),p2=newId();
+  const p1=newId(),p2=newId(),c1=newId();
   return [
    mk({title:"Ideia: newsletter mensal para clientes",list:"inbox"}),
    mk({title:"Conta de luz chegou",list:"inbox"}),
    mk({title:"Livro que o Pedro indicou na reunião",list:"inbox"}),
-   {id:p1,kind:"project",title:"Lançar site de portfólio",outcome:"Site no ar com três cases publicados",status:"active",created:now,ex:true},
+   {id:c1,kind:"client",title:"Cliente Exemplo",status:"active",created:now,ex:true},
+   {id:p1,kind:"project",client:c1,title:"Lançar site de portfólio",outcome:"Site no ar com três cases publicados",status:"active",created:now,ex:true},
    {id:p2,kind:"project",title:"Planejar viagem de fim de ano",outcome:"Passagens e hospedagem reservadas",status:"active",created:now,ex:true},
    mk({title:"Escrever o texto do primeiro case",list:"next",ctx:"@computador",project:p1,time:60,energy:"alta"}),
-   mk({title:"Responder e-mail da contabilidade",list:"next",ctx:"@computador",time:15,energy:"baixa"}),
+   mk({title:"Responder e-mail da contabilidade",today:today(),list:"next",ctx:"@computador",time:15,energy:"baixa"}),
    mk({title:"Ligar para o banco sobre a fatura",list:"next",ctx:"@telefone",time:15,energy:"media"}),
    mk({title:"Comprar filtro para o desumidificador",list:"next",ctx:"@rua",time:30,energy:"baixa"}),
    mk({title:"Trocar a lâmpada do corredor",list:"next",ctx:"@casa",time:5,energy:"baixa"}),
@@ -399,14 +432,30 @@ function counts(){const its=items();const c={};
   c.referencia=its.filter(i=>i.list==="reference").length;
   c.concluidas=its.filter(i=>i.list==="done").length;
   c.foco=((meta().pomLog||{})[today()]||{}).n||0;
+  c.hoje=its.filter(i=>(i.list==="scheduled"&&i.date&&dayDiff(i.date)<=0)||(i.list==="waiting"&&i.date&&dayDiff(i.date)<=0)||isToday(i)).length;
+  c.hojeHot=its.some(i=>(i.list==="scheduled"||i.list==="waiting")&&i.date&&dayDiff(i.date)<0);
+  c.clientes=clients().filter(x=>x.status!=="archived").length;
   const lr=meta().lastReview;c.revisaoHot=!lr||dayDiff(lr)<-7;c.revisao=lr?(-dayDiff(lr))+"d":"—";
   return c}
 
 /* ---------- linhas ---------- */
+const clients=()=>all().filter(x=>x.kind==="client");
+const byTitle=(a,b)=>String(a.title||"").localeCompare(String(b.title||""),"pt-BR");
+function cliName(id){const c=id&&S.items.get(id);return c&&c.kind==="client"?c.title:""}
+function cliOf(it){if(!it)return null;if(it.kind==="project")return it.client||null;const p=it.project&&S.items.get(it.project);return (p&&p.client)||it.client||null}
+function projLabel(p){const c=cliName(p.client);return (c?c+" · ":"")+p.title}
+function cliOpts(sel){return `<option value="">Nenhum</option>`+clients().filter(c=>c.status!=="archived"||c.id===sel).sort(byTitle).map(c=>`<option value="${c.id}" ${sel===c.id?"selected":""}>${esc(c.title)}</option>`).join("")}
+function cliSel(){const cs=clients().filter(c=>c.status!=="archived").sort(byTitle);if(!cs.length)return"";if(ui.cli!=="all"&&ui.cli!=="none"&&!cliName(ui.cli))ui.cli="all";
+  return `<select class="sel" id="f-cli" aria-label="Cliente"><option value="all">Todos os clientes</option>${cs.map(c=>`<option value="${c.id}" ${ui.cli===c.id?"selected":""}>${esc(c.title)}</option>`).join("")}<option value="none" ${ui.cli==="none"?"selected":""}>Sem cliente</option></select>`}
+function byCli(l){if(ui.cli==="all")return l;return l.filter(i=>ui.cli==="none"?!cliOf(i):cliOf(i)===ui.cli)}
+const isToday=i=>i.list==="next"&&i.today===today();
+function todayBtn(i){const on=isToday(i);return `<button class="btn small ${on?"on":""}" data-act="today" aria-pressed="${on}" title="${on?"Tirar do foco de hoje":"Colocar no foco de hoje"}">Hoje</button>`}
 function projName(id){const p=id&&S.items.get(id);return p&&p.kind==="project"?p.title:""}
 function chipsFor(it,opts){opts=opts||{};const c=[];
   if(P.task===it.id&&P.phase!=="idle"&&it.list!=="done")c.push(`<span class="chip ctx">em foco</span>`);
   if(it.ctx&&!opts.noCtx)c.push(`<span class="chip ctx">${esc(it.ctx)}</span>`);
+  if(!opts.noToday&&isToday(it))c.push(`<span class="chip ctx">hoje</span>`);
+  if(!opts.noCli&&cliName(cliOf(it)))c.push(`<span class="chip cli">${esc(cliName(cliOf(it)))}</span>`);
   if(it.project&&!opts.noProj&&projName(it.project))c.push(`<span class="chip proj">${esc(projName(it.project))}</span>`);
   if(it.who)c.push(`<span class="chip">com ${esc(it.who)}</span>`);
   if(it.date){const d=dayDiff(it.date);const hot=it.list==="waiting"?d<0:d<=0;c.push(`<span class="chip ${hot&&it.list!=="done"?"warn":""}">${it.list==="waiting"?"cobrar ":""}${esc(relDate(it.date))}</span>`)}
@@ -421,7 +470,7 @@ function row(it,opts){opts=opts||{};const done=it.list==="done";
   return `<li class="row ${done?"done":""}" data-id="${it.id}">
    <button class="check ${done?"on":""}" data-act="done" aria-label="${done?"Reabrir":"Concluir"}: ${esc(it.title)}"></button>
    <button class="row-main" data-act="${opts.main||"edit"}"><span class="t">${esc(it.title)}</span>${chipsFor(it,opts)}</button>
-   ${opts.side?`<span class="row-side">${opts.side}</span>`:""}
+   ${opts.side?`<span class="row-side">${typeof opts.side==="function"?opts.side(it):opts.side}</span>`:""}
   </li>`}
 const byCreated=(a,b)=>(a.created||0)-(b.created||0);
 const byDate=(a,b)=>(a.date||"9999").localeCompare(b.date||"9999")||byCreated(a,b);
@@ -444,7 +493,7 @@ function clarifyCard(inbox){
   const it=S.items.get(c.id),n=inbox.findIndex(i=>i.id===c.id)+1,d=c.d;
   const choice=(act,to,b,s)=>`<button class="choice" data-act="${act}" ${to?`data-to="${to}"`:""}><b>${b}</b>${s?`<small>${s}</small>`:""}</button>`;
   const ctxPick=()=>`<div class="field wide"><span class="lbl">Contexto (onde ou com o quê dá para fazer)</span><div class="ctxs">${allContexts().map(x=>`<button type="button" class="pill" data-act="cl-ctx" data-v="${esc(x)}" aria-pressed="${d.ctx===x}">${esc(x)}</button>`).join("")}</div></div>`;
-  const projSel=()=>`<div class="field"><label for="cl-proj">Projeto</label><select id="cl-proj" class="sel" data-draft="project"><option value="">Nenhum</option>${projects().filter(p=>p.status==="active").map(p=>`<option value="${p.id}" ${d.project===p.id?"selected":""}>${esc(p.title)}</option>`).join("")}</select></div>`;
+  const projSel=()=>`<div class="field"><label for="cl-proj">Projeto</label><select id="cl-proj" class="sel" data-draft="project"><option value="">Nenhum</option>${projects().filter(p=>p.status==="active").map(p=>`<option value="${p.id}" ${d.project===p.id?"selected":""}>${esc(projLabel(p))}</option>`).join("")}</select></div>`;
   const timeSel=()=>`<div class="field"><label for="cl-time">Tempo estimado</label><select id="cl-time" class="sel" data-draft="time"><option value="">—</option>${TIMES.map(t=>`<option value="${t}" ${String(d.time)===String(t)?"selected":""}>${t>=60?t/60+" h":t+" min"}</option>`).join("")}</select></div>`;
   const enSel=()=>`<div class="field"><label for="cl-en">Energia</label><select id="cl-en" class="sel" data-draft="energy"><option value="">—</option>${Object.keys(ENERGY).map(k=>`<option value="${k}" ${d.energy===k?"selected":""}>${k==="media"?"média":k}</option>`).join("")}</select></div>`;
   const titleF=(lbl)=>`<div class="field wide"><label for="cl-title">${lbl}</label><input id="cl-title" class="inp" data-draft="title" value="${esc(d.title!=null?d.title:it.title)}"></div>`;
@@ -457,7 +506,7 @@ function clarifyCard(inbox){
    case"f-next":body=`<p class="q">Qual a próxima ação física e visível?</p><div class="fields">${titleF("Ação (comece com um verbo)")}${ctxPick()}${projSel()}${timeSel()}${enSel()}</div>`;break;
    case"f-wait":body=`<p class="q">Com quem fica, e quando cobrar?</p><div class="fields">${titleF("O que você está aguardando")}<div class="field"><label for="cl-who">Pessoa</label><input id="cl-who" class="inp" data-draft="who" value="${esc(d.who||"")}" placeholder="Nome"></div><div class="field"><label for="cl-date">Cobrar em</label><input id="cl-date" type="date" class="inp" data-draft="date" value="${esc(d.date||addDays(3))}"></div>${projSel()}</div>`;break;
    case"f-sched":body=`<p class="q">Em que dia isso precisa acontecer?</p><div class="fields">${titleF("Compromisso ou ação")}<div class="field"><label for="cl-date">Data</label><input id="cl-date" type="date" class="inp" data-draft="date" value="${esc(d.date||today())}"></div>${projSel()}</div>`;break;
-   case"f-proj":body=`<p class="q">Como fica “pronto”? E qual o primeiro passo?</p><div class="fields">${titleF("Nome do projeto")}<div class="field wide"><label for="cl-out">Resultado esperado</label><input id="cl-out" class="inp" data-draft="outcome" value="${esc(d.outcome||"")}" placeholder="Ex.: site no ar com três cases"></div><div class="field wide"><label for="cl-first">Primeira próxima ação</label><input id="cl-first" class="inp" data-draft="first" value="${esc(d.first||"")}" placeholder="Ex.: listar os cases candidatos"></div>${ctxPick()}</div>`;break;
+   case"f-proj":body=`<p class="q">Como fica “pronto”? E qual o primeiro passo?</p><div class="fields">${titleF("Nome do projeto")}<div class="field wide"><label for="cl-out">Resultado esperado</label><input id="cl-out" class="inp" data-draft="outcome" value="${esc(d.outcome||"")}" placeholder="Ex.: site no ar com três cases"></div><div class="field wide"><label for="cl-first">Primeira próxima ação</label><input id="cl-first" class="inp" data-draft="first" value="${esc(d.first||"")}" placeholder="Ex.: listar os cases candidatos"></div>${clients().length?`<div class="field"><label for="cl-cli">Cliente</label><select id="cl-cli" class="sel" data-draft="client">${cliOpts(d.client||"")}</select></div>`:""}${ctxPick()}</div>`;break;
   }
   const isForm=c.step.startsWith("f-");
   return `<section class="clarify" aria-label="Processar item">
@@ -476,14 +525,69 @@ function vProximas(){
   let h=`<h1 class="view">Próximas ações</h1><p class="lede">Escolha pelo contexto em que você está, pelo tempo livre e pela energia que sobra.</p>
   <div class="filters" role="group" aria-label="Contexto"><button class="pill" data-act="f-ctx" data-v="all" aria-pressed="${ui.ctx==="all"}">Todos</button>${ctxs.map(x=>`<button class="pill" data-act="f-ctx" data-v="${esc(x)}" aria-pressed="${ui.ctx===x}">${esc(x)} <span class="mono">${list.filter(i=>i.ctx===x).length}</span></button>`).join("")}${list.some(i=>!i.ctx)?`<button class="pill" data-act="f-ctx" data-v="none" aria-pressed="${ui.ctx==="none"}">Sem contexto</button>`:""}</div>
   <div class="filters"><select class="sel" id="f-time" aria-label="Tempo disponível"><option value="all">Qualquer tempo</option>${TIMES.map(t=>`<option value="${t}" ${ui.time==String(t)?"selected":""}>Tenho até ${t>=60?t/60+" h":t+" min"}</option>`).join("")}</select>
-  <select class="sel" id="f-energy" aria-label="Energia"><option value="all">Qualquer energia</option><option value="baixa" ${ui.energy==="baixa"?"selected":""}>Energia baixa</option><option value="media" ${ui.energy==="media"?"selected":""}>Até energia média</option><option value="alta" ${ui.energy==="alta"?"selected":""}>Energia alta</option></select></div>`;
+  <select class="sel" id="f-energy" aria-label="Energia"><option value="all">Qualquer energia</option><option value="baixa" ${ui.energy==="baixa"?"selected":""}>Energia baixa</option><option value="media" ${ui.energy==="media"?"selected":""}>Até energia média</option><option value="alta" ${ui.energy==="alta"?"selected":""}>Energia alta</option></select>${cliSel()}</div>`;
   if(ui.ctx==="none")list=list.filter(i=>!i.ctx);else if(ui.ctx!=="all")list=list.filter(i=>i.ctx===ui.ctx);
   if(ui.time!=="all")list=list.filter(i=>!i.time||i.time<=+ui.time);
-  const rank={baixa:1,media:2,alta:3};if(ui.energy!=="all")list=list.filter(i=>!i.energy||rank[i.energy]<=rank[ui.energy]);
+  const rank={baixa:1,media:2,alta:3};if(ui.energy!=="all")list=list.filter(i=>!i.energy||rank[i.energy]<=rank[ui.energy]);list=byCli(list);
   list.sort(byCreated);
   if(!list.length)return h+`<p class="muted">Nenhuma ação com esses filtros. ${inList("inbox").length?`Você tem <a href="#caixa">${inList("inbox").length} itens para processar</a>.`:""}</p>`;
-  if(ui.ctx==="all"){const groups=[...ctxs,""];groups.forEach(g=>{const l=list.filter(i=>(i.ctx||"")===g);if(l.length)h+=`<h2 class="sec">${g?esc(g):"Sem contexto"} <span class="mono">${l.length}</span></h2><ul class="list">${l.map(i=>row(i,{noCtx:true,side:focusBtn(i)})).join("")}</ul>`})}
-  else h+=`<ul class="list" style="margin-top:16px">${list.map(i=>row(i,{noCtx:true,side:focusBtn(i)})).join("")}</ul>`;
+  if(ui.ctx==="all"){const groups=[...ctxs,""];groups.forEach(g=>{const l=list.filter(i=>(i.ctx||"")===g);if(l.length)h+=`<h2 class="sec">${g?esc(g):"Sem contexto"} <span class="mono">${l.length}</span></h2><ul class="list">${l.map(i=>row(i,{noCtx:true,side:todayBtn(i)+focusBtn(i)})).join("")}</ul>`})}
+  else h+=`<ul class="list" style="margin-top:16px">${list.map(i=>row(i,{noCtx:true,side:todayBtn(i)+focusBtn(i)})).join("")}</ul>`;
+  return h}
+
+function vHoje(){
+  const its=items(),t=today();
+  const agenda=byCli(its.filter(i=>i.list==="scheduled"&&i.date&&dayDiff(i.date)<=0)).sort(byDate);
+  const cobrar=byCli(its.filter(i=>i.list==="waiting"&&i.date&&dayDiff(i.date)<=0)).sort(byDate);
+  const foco=byCli(its.filter(isToday)).sort(byCreated);
+  const amanha=byCli(its.filter(i=>(i.list==="scheduled"||i.list==="waiting")&&i.date&&dayDiff(i.date)===1)).sort(byDate);
+  const feitas=byCli(its.filter(i=>i.list==="done"&&i.doneAt&&iso(i.doneAt)===t)).sort((a,b)=>b.doneAt-a.doneAt);
+  const inboxN=its.filter(i=>i.list==="inbox").length,pom=((meta().pomLog||{})[t]||{}).n||0;
+  const ds=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  const card=(title,list,empty,opts,cls)=>`<section class="hcard ${cls||""}"><h2 class="sec ${opts&&opts.warn&&list.length?"warn":""}">${title} <span class="mono">${list.length}</span></h2>${list.length?`<ul class="list">${list.map(i=>row(i,opts)).join("")}</ul>`:`<p class="muted small" style="margin:6px 0 2px">${empty}</p>`}</section>`;
+  let h=`<h1 class="view">Hoje</h1><p class="lede">${esc(ds.charAt(0).toUpperCase()+ds.slice(1))}. Primeiro o que tem data, depois as cobranças, depois as ações que você escolheu para hoje.</p>`;
+  const f=cliSel();if(f)h+=`<div class="filters">${f}</div>`;
+  if(inboxN)h+=`<div class="note"><span>${inboxN} ${inboxN===1?"item":"itens"} na caixa de entrada esperando processamento.</span><a class="btn small" href="#caixa">Processar</a></div>`;
+  h+=`<div class="hgrid">`;
+  h+=card("Agenda de hoje",agenda,"Nada com data para hoje.",{warn:true},"");
+  h+=card("Cobrar hoje",cobrar,"Ninguém para cobrar hoje.",{warn:true},"");
+  h+=card("Foco do dia",foco,`Marque <b>Hoje</b> nas <a href="#proximas">próximas ações</a> que você quer fazer hoje.`,{noToday:true,side:i=>todayBtn(i)+focusBtn(i)},"wide");
+  h+=card("Amanhã",amanha,"Nada marcado para amanhã.",{},"");
+  h+=card(`Concluídas hoje${pom?` · ${pom} pomodoros`:""}`,feitas,"Nada concluído ainda hoje.",{},"");
+  return h+`</div>`}
+
+const COLS=[["inbox","Caixa de entrada"],["next","Próximas ações"],["waiting","Aguardando"],["scheduled","Agendado"],["someday","Algum dia"]];
+function qcard(i){const cli=cliName(cliOf(i)),pj=projName(i.project);
+  return `<article class="qcard" draggable="true" data-id="${i.id}" data-act="edit" tabindex="0" aria-label="${esc(i.title)}"><div class="qt">${esc(i.title)}</div>${cli||pj?`<div class="qm">${esc([cli,pj].filter(Boolean).join(" · "))}</div>`:""}${chipsFor(i,{noCli:true,noProj:true})}</article>`}
+function vQuadro(){
+  let its=byCli(items());
+  const ps=projects().filter(p=>p.status==="active"&&(ui.cli==="all"||(ui.cli==="none"?!cliName(p.client):p.client===ui.cli))).sort(byTitle);
+  if(ui.qProj!=="all"&&ui.qProj!=="none"&&!ps.some(p=>p.id===ui.qProj))ui.qProj="all";
+  if(ui.qProj!=="all")its=its.filter(i=>ui.qProj==="none"?!i.project:i.project===ui.qProj);
+  let h=`<h1 class="view">Quadro</h1><p class="lede">Todas as esteiras lado a lado. Arraste um cartão para outra lista ou toque nele para editar.</p>
+  <div class="filters">${cliSel()}<select class="sel" id="f-qproj" aria-label="Projeto"><option value="all">Todos os projetos</option>${ps.map(p=>`<option value="${p.id}" ${ui.qProj===p.id?"selected":""}>${esc(p.title)}</option>`).join("")}<option value="none" ${ui.qProj==="none"?"selected":""}>Sem projeto</option></select></div>
+  <div class="board">${COLS.map(([k,lbl])=>{const l=its.filter(i=>i.list===k).sort(k==="scheduled"||k==="waiting"?byDate:byCreated);
+    return `<section class="col" data-list="${k}" aria-label="${lbl}"><h2 class="col-h"><span>${lbl}</span><span class="mono">${l.length}</span></h2><div class="col-b">${l.map(qcard).join("")||`<p class="muted small col-empty">Vazio</p>`}</div></section>`}).join("")}</div>`;
+  return h}
+
+function vClientes(){
+  const cs=clients().sort(byTitle),act=cs.filter(c=>c.status!=="archived"),arc=cs.filter(c=>c.status==="archived");
+  let h=`<h1 class="view">Clientes</h1><p class="lede">Cada projeto pode pertencer a um cliente. Aqui você vê o que está andando em cada conta e o que precisa de atenção.</p>
+  <form class="inline-add" id="nc" style="margin-bottom:20px"><input id="nc-in" class="inp" placeholder="Nome do cliente" aria-label="Novo cliente"><button class="btn primary" type="submit">Adicionar cliente</button></form>`;
+  const its=items(),st=stalled();
+  if(act.length)h+=`<div class="cgrid">${act.map(c=>{
+    const ps=projects().filter(p=>p.client===c.id&&p.status==="active").sort(byTitle),mine=its.filter(i=>cliOf(i)===c.id);
+    const nNext=mine.filter(i=>i.list==="next").length,nWait=mine.filter(i=>i.list==="waiting").length;
+    const late=mine.filter(i=>(i.list==="scheduled"&&i.date&&dayDiff(i.date)<=0)||(i.list==="waiting"&&i.date&&dayDiff(i.date)<=0)).length;
+    const stl=ps.filter(p=>st.includes(p)).length;
+    return `<section class="hcard ccard" data-id="${c.id}"><div class="cc-h"><h3>${esc(c.title)}</h3><button class="btn small ghost" data-act="edit">Editar</button></div>
+     <div class="chips"><span class="chip mono">${ps.length} ${ps.length===1?"projeto":"projetos"}</span><span class="chip mono">${nNext} ${nNext===1?"ação":"ações"}</span>${nWait?`<span class="chip mono">${nWait} aguardando</span>`:""}${late?`<span class="chip warn">${late} para hoje</span>`:""}${stl?`<span class="chip warn">${stl} sem próxima ação</span>`:""}</div>
+     ${ps.length?`<ul class="clist">${ps.map(p=>`<li><span>${esc(p.title)}</span><span class="mono small muted">${its.filter(i=>i.project===p.id&&i.list==="next").length}</span></li>`).join("")}</ul>`:`<p class="small muted" style="margin:0">Nenhum projeto ativo.</p>`}
+     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" data-act="c-board">Ver no quadro</button><button class="btn small" data-act="c-next">Próximas ações</button></div></section>`}).join("")}</div>`;
+  else h+=`<p class="muted">Nenhum cliente ainda. Adicione o primeiro acima.</p>`;
+  const orphan=projects().filter(p=>p.status==="active"&&!cliName(p.client)).sort(byTitle);
+  if(orphan.length&&act.length)h+=`<h2 class="sec">Projetos sem cliente <span class="mono">${orphan.length}</span></h2><ul class="list">${orphan.map(p=>`<li class="row"><span class="row-main"><span class="t">${esc(p.title)}</span></span><span class="row-side"><select class="sel" id="pcli-${p.id}" data-pcli="${p.id}" aria-label="Cliente de ${esc(p.title)}">${cliOpts("")}</select></span></li>`).join("")}</ul>`;
+  if(arc.length)h+=`<h2 class="sec">Arquivados <span class="mono">${arc.length}</span></h2><ul class="list">${arc.map(c=>`<li class="row" data-id="${c.id}"><button class="row-main" data-act="edit"><span class="t">${esc(c.title)}</span></button></li>`).join("")}</ul>`;
   return h}
 
 function vAgenda(){
@@ -519,10 +623,12 @@ function projBlock(p){
 function vProjetos(){
   const act=projects().filter(p=>p.status==="active").sort(byCreated),st=stalled();
   let h=`<h1 class="view">Projetos</h1><p class="lede">Qualquer resultado que pede mais de uma ação. Cada projeto ativo precisa de pelo menos uma próxima ação.</p>
-  <form class="inline-add" id="np" style="margin-bottom:8px"><input id="np-in" class="inp" placeholder="Novo projeto (o resultado que você quer)" aria-label="Novo projeto"><button class="btn primary" type="submit">Criar projeto</button></form>`;
+  <form class="inline-add" id="np" style="margin-bottom:8px"><input id="np-in" class="inp" placeholder="Novo projeto (o resultado que você quer)" aria-label="Novo projeto">${clients().length?`<select id="np-cli" class="sel" aria-label="Cliente do projeto">${cliOpts(ui.cli!=="all"&&ui.cli!=="none"?ui.cli:"")}</select>`:""}<button class="btn primary" type="submit">Criar projeto</button></form>`;
   if(st.length)h+=`<p class="small" style="color:var(--warn);margin:12px 0 0">${st.length} ${st.length===1?"projeto está":"projetos estão"} sem próxima ação.</p>`;
-  h+=`<h2 class="sec">Ativos <span class="mono">${act.length}</span></h2>`;
-  h+=act.length?`<div style="border-top:1px solid var(--line)">${act.map(projBlock).join("")}</div>`:`<p class="muted">Nenhum projeto ativo.</p>`;
+  if(!act.length)h+=`<h2 class="sec">Ativos</h2><p class="muted">Nenhum projeto ativo.</p>`;
+  else if(!clients().length)h+=`<h2 class="sec">Ativos <span class="mono">${act.length}</span></h2><div style="border-top:1px solid var(--line)">${act.map(projBlock).join("")}</div>`;
+  else{const gs=clients().sort(byTitle).map(c=>[c.id,c.title]).concat([[null,"Sem cliente"]]);
+    gs.forEach(([cid,lbl])=>{const g=act.filter(p=>cid?p.client===cid:!cliName(p.client));if(g.length)h+=`<h2 class="sec">${esc(lbl)} <span class="mono">${g.length}</span></h2><div style="border-top:1px solid var(--line)">${g.map(projBlock).join("")}</div>`})}
   const done=projects().filter(p=>p.status==="done");
   if(done.length)h+=`<h2 class="sec">Concluídos <span class="mono">${done.length}</span></h2><div style="border-top:1px solid var(--line)">${done.map(projBlock).join("")}</div>`;
   return h}
@@ -623,9 +729,9 @@ function vFoco(){
   else ctrl=`<button class="btn primary" data-act="pom-resume">Continuar</button><button class="btn ghost" data-act="pom-stop">Encerrar</button>`;
   const extra=task&&task.list!=="next"?`<option value="${task.id}" selected>${esc(task.title)}</option>`:"";
   const optOf=i=>`<option value="${i.id}" ${P.task===i.id?"selected":""}>${esc(i.title)}${i.ctx?" ("+esc(i.ctx)+")":""}</option>`;
-  const pgroups=projects().filter(p=>next.some(i=>i.project===p.id)).sort(byCreated);
+  const pgroups=projects().filter(p=>next.some(i=>i.project===p.id)).sort((a,b)=>projLabel(a).localeCompare(projLabel(b),"pt-BR"));
   const loose=next.filter(i=>!i.project||!projName(i.project));
-  const opts=pgroups.map(p=>`<optgroup label="${esc(p.title)}">${next.filter(i=>i.project===p.id).map(optOf).join("")}</optgroup>`).join("")+(loose.length?(pgroups.length?`<optgroup label="Sem projeto">${loose.map(optOf).join("")}</optgroup>`:loose.map(optOf).join("")):"");
+  const opts=pgroups.map(p=>`<optgroup label="${esc(projLabel(p))}">${next.filter(i=>i.project===p.id).map(optOf).join("")}</optgroup>`).join("")+(loose.length?(pgroups.length?`<optgroup label="Sem projeto">${loose.map(optOf).join("")}</optgroup>`:loose.map(optOf).join("")):"");
   let h=`<h1 class="view">Foco</h1><p class="lede">Um pomodoro é ${s.focus} minutos em uma única próxima ação, seguidos de uma pausa curta. A cada ${s.every}, uma pausa longa. Se algo surgir no meio, capture no campo do topo: vai para a caixa de entrada e você volta ao foco.</p>
   <section class="timer ${isBrk?"brk":P.phase==="focus"?"on":""}" aria-label="Pomodoro">
    <div class="ph"><span>${esc(ph)}</span><span class="dots" title="${filled} de ${s.every} até a pausa longa" aria-label="${filled} de ${s.every} até a pausa longa">${Array.from({length:s.every},(_,k)=>`<i class="${k<filled?"on":""}"></i>`).join("")}</span></div>
@@ -671,7 +777,7 @@ function render(){
   if(!S.loaded){$("#main").innerHTML=h+`<h1 class="view">Carregando…</h1><p class="lede">Buscando suas tarefas.</p>`;return}
   if(ui.importN)h+=`<div class="note"><span>Há ${ui.importN} itens salvos só neste navegador. Quer levar para sua conta?</span><span style="display:flex;gap:8px"><button class="btn small primary" data-act="import-local">Importar</button><button class="btn small ghost" data-act="import-no">Agora não</button></span></div>`;
   if(hasExamples())h+=`<div class="note"><span>Você está vendo dados de exemplo. Teste à vontade e apague quando for começar.</span><button class="btn small" data-act="clear-ex">Apagar exemplos</button></div>`;
-  const fn={caixa:vCaixa,proximas:vProximas,foco:vFoco,agenda:vAgenda,aguardando:vAguardando,projetos:vProjetos,"algum-dia":vAlgumDia,referencia:vReferencia,revisao:vRevisao,concluidas:vConcluidas}[ui.view]||vCaixa;
+  const fn={hoje:vHoje,quadro:vQuadro,clientes:vClientes,caixa:vCaixa,proximas:vProximas,foco:vFoco,agenda:vAgenda,aguardando:vAguardando,projetos:vProjetos,"algum-dia":vAlgumDia,referencia:vReferencia,revisao:vRevisao,concluidas:vConcluidas}[ui.view]||vCaixa;
   h+=fn();h+=`<div class="foot mob">${acctHtml()}</div>`;
   $("#main").innerHTML=h;renderPomBar();
   if(fid){const el=document.getElementById(fid);if(el){el.focus();try{el.setSelectionRange(s0,s1)}catch(e){}}}
@@ -684,22 +790,24 @@ function clSave(){const c=ui.clarify,it=S.items.get(c.id),d=c.d;if(!it)return;
   if(c.step==="f-next"){patch(c.id,{title,list:"next",ctx:d.ctx||null,project:proj,time:d.time?+d.time:null,energy:d.energy||null});toast("Foi para Próximas ações.")}
   else if(c.step==="f-wait"){patch(c.id,{title,list:"waiting",who:(d.who||"").trim()||null,date:d.date||addDays(3),project:proj});toast("Foi para Aguardando.")}
   else if(c.step==="f-sched"){patch(c.id,{title,list:"scheduled",date:d.date||today(),project:proj});toast("Foi para a agenda.")}
-  else if(c.step==="f-proj"){const pid=newId();put(pid,{kind:"project",title,outcome:(d.outcome||"").trim(),status:"active",created:Date.now()});
+  else if(c.step==="f-proj"){const pid=newId();put(pid,{kind:"project",title,outcome:(d.outcome||"").trim(),client:d.client||null,status:"active",created:Date.now()});
     if((d.first||"").trim()){patch(c.id,{title:d.first.trim(),list:"next",ctx:d.ctx||null,project:pid,notes:it.notes||null})}else{del(c.id)}
     toast((d.first||"").trim()?"Projeto criado com a primeira ação.":"Projeto criado. Falta definir a próxima ação.")}
   clNext();render()}
 
 /* ---------- editor ---------- */
 let delArm=false;
-function openSheet(id){const it=S.items.get(id);if(!it)return;delArm=false;const sh=$("#sheet");const isP=it.kind==="project";
+function openSheet(id){const it=S.items.get(id);if(!it)return;delArm=false;const sh=$("#sheet");const isP=it.kind==="project",isC=it.kind==="client";
   const opt=(v,l,sel)=>`<option value="${esc(v)}" ${sel?"selected":""}>${esc(l)}</option>`;
-  sh.innerHTML=`<form id="ed" data-id="${id}"><h3>${isP?"Editar projeto":"Editar item"}</h3><div class="fields">
-   <div class="field wide"><label for="e-title">${isP?"Nome":"Título"}</label><input id="e-title" class="inp" value="${esc(it.title)}" required></div>
-   ${isP?`<div class="field wide"><label for="e-out">Resultado esperado</label><input id="e-out" class="inp" value="${esc(it.outcome||"")}"></div>
-     <div class="field"><label for="e-status">Situação</label><select id="e-status" class="sel">${opt("active","Ativo",it.status==="active")}${opt("someday","Algum dia",it.status==="someday")}${opt("done","Concluído",it.status==="done")}</select></div>`
+  sh.innerHTML=`<form id="ed" data-id="${id}"><h3>${isC?"Editar cliente":isP?"Editar projeto":"Editar item"}</h3><div class="fields">
+   <div class="field wide"><label for="e-title">${isP||isC?"Nome":"Título"}</label><input id="e-title" class="inp" value="${esc(it.title)}" required></div>
+   ${isC?`<div class="field"><label for="e-cst">Situação</label><select id="e-cst" class="sel">${opt("active","Ativo",it.status!=="archived")}${opt("archived","Arquivado",it.status==="archived")}</select></div>`:isP?`<div class="field wide"><label for="e-out">Resultado esperado</label><input id="e-out" class="inp" value="${esc(it.outcome||"")}"></div>
+     <div class="field"><label for="e-status">Situação</label><select id="e-status" class="sel">${opt("active","Ativo",it.status==="active")}${opt("someday","Algum dia",it.status==="someday")}${opt("done","Concluído",it.status==="done")}</select></div>
+     <div class="field"><label for="e-cli">Cliente</label><select id="e-cli" class="sel">${cliOpts(it.client||"")}</select></div>`
    :`<div class="field"><label for="e-list">Lista</label><select id="e-list" class="sel">${Object.keys(LISTNAME).map(k=>opt(k,LISTNAME[k],it.list===k)).join("")}</select></div>
      <div class="field"><label for="e-ctx">Contexto</label><input id="e-ctx" class="inp" list="ctx-dl" value="${esc(it.ctx||"")}" placeholder="@computador"><datalist id="ctx-dl">${allContexts().map(x=>`<option value="${esc(x)}">`).join("")}</datalist></div>
      <div class="field"><label for="e-proj">Projeto</label><select id="e-proj" class="sel">${opt("","Nenhum",!it.project)}${projects().filter(p=>p.status!=="done"||p.id===it.project).map(p=>opt(p.id,p.title,it.project===p.id)).join("")}</select></div>
+     <div class="field"><label for="e-icli">Cliente (se não tiver projeto)</label><select id="e-icli" class="sel">${cliOpts(it.client||"")}</select></div>
      <div class="field"><label for="e-date">Data</label><input id="e-date" type="date" class="inp" value="${esc(it.date||"")}"></div>
      <div class="field"><label for="e-who">Aguardando de</label><input id="e-who" class="inp" value="${esc(it.who||"")}"></div>
      <div class="field"><label for="e-time">Tempo</label><select id="e-time" class="sel">${opt("","—",!it.time)}${TIMES.map(t=>opt(t,t>=60?t/60+" h":t+" min",it.time==t)).join("")}</select></div>
@@ -711,11 +819,12 @@ function openSheet(id){const it=S.items.get(id);if(!it)return;delArm=false;const
 function closeSheet(){$("#sheet").hidden=true;$("#sheet").innerHTML=""}
 $("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet"||e.target.id==="e-cancel")closeSheet();
   if(e.target.id==="e-del"){if(!delArm){delArm=true;e.target.textContent="Toque de novo para excluir";return}
-    const id=$("#ed").dataset.id;closeSheet();del(id);toast("Excluído.")}});
+    const id=$("#ed").dataset.id,x=S.items.get(id);closeSheet();if(x&&x.kind==="client")projects().filter(p=>p.client===id).forEach(p=>patch(p.id,{client:null}));if(x&&x.kind==="project")items().filter(i=>i.project===id).forEach(i=>patch(i.id,{project:null}));del(id);toast("Excluído.")}});
 $("#sheet").addEventListener("submit",e=>{e.preventDefault();const id=e.target.dataset.id,it=S.items.get(id);if(!it)return closeSheet();
   const v=s=>{const el=$(s);return el?el.value.trim():""};const title=v("#e-title")||it.title;
-  if(it.kind==="project")patch(id,{title,outcome:v("#e-out"),status:v("#e-status"),notes:v("#e-notes")||null});
-  else{const list=v("#e-list");patch(id,{title,list,ctx:v("#e-ctx")||null,project:v("#e-proj")||null,date:v("#e-date")||null,who:v("#e-who")||null,time:v("#e-time")?+v("#e-time"):null,est:v("#e-est")?+v("#e-est"):null,energy:v("#e-en")||null,notes:v("#e-notes")||null,doneAt:list==="done"?(it.doneAt||Date.now()):null,prevList:list==="done"&&it.list!=="done"?it.list:it.prevList||null})}
+  if(it.kind==="client")patch(id,{title,status:v("#e-cst"),notes:v("#e-notes")||null});
+  else if(it.kind==="project")patch(id,{title,outcome:v("#e-out"),status:v("#e-status"),client:v("#e-cli")||null,notes:v("#e-notes")||null});
+  else{const list=v("#e-list");patch(id,{title,list,ctx:v("#e-ctx")||null,project:v("#e-proj")||null,client:v("#e-icli")||null,date:v("#e-date")||null,who:v("#e-who")||null,time:v("#e-time")?+v("#e-time"):null,est:v("#e-est")?+v("#e-est"):null,energy:v("#e-en")||null,notes:v("#e-notes")||null,doneAt:list==="done"?(it.doneAt||Date.now()):null,prevList:list==="done"&&it.list!=="done"?it.list:it.prevList||null})}
   closeSheet();toast("Salvo.")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeSheet();
   if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&$("#sheet").hidden){e.preventDefault();$("#cap-in").focus()}});
@@ -730,6 +839,9 @@ main.addEventListener("click",e=>{
   switch(act){
    case"done":complete(id);break;
    case"edit":openSheet(id);break;
+   case"today":{const it=S.items.get(id);if(it)patch(id,{today:isToday(it)?null:today()});break}
+   case"c-board":ui.cli=id;ui.qProj="all";location.hash="quadro";break;
+   case"c-next":ui.cli=id;ui.ctx="all";location.hash="proximas";break;
    case"process":ui.clarify={id,step:"acionavel",trail:[],d:{}};render();main.querySelector(".clarify").scrollIntoView({block:"nearest",behavior:"smooth"});break;
    case"activate":patch(id,{list:"inbox"});toast("Voltou para a caixa de entrada para ser processado.");break;
    case"load-ex":loadExamples();break;
@@ -764,10 +876,14 @@ main.addEventListener("input",e=>{const t=e.target;if(t.dataset.draft&&ui.clarif
 main.addEventListener("change",e=>{const t=e.target;if(t.dataset.draft&&ui.clarify)ui.clarify.d[t.dataset.draft]=t.value;
   if(t.id==="pom-task"){P.task=t.value||null;psave();render()}
   if(t.dataset.ps){const m=meta();put("meta",{...m,kind:"meta",pom:{...pset(),[t.dataset.ps]:+t.value}})}
+  if(t.id==="f-cli"){ui.cli=t.value;ui.qProj="all";render()}
+  if(t.id==="f-qproj"){ui.qProj=t.value;render()}
+  if(t.dataset.pcli&&t.value){patch(t.dataset.pcli,{client:t.value});toast("Projeto vinculado ao cliente.")}
   if(t.id==="f-time"){ui.time=t.value;render()}if(t.id==="f-energy"){ui.energy=t.value;render()}});
-main.addEventListener("keydown",e=>{const t=e.target;if(e.key==="Enter"&&t.dataset.pa){e.preventDefault();t.closest(".proj").querySelector('[data-act="p-add"]').click()}
+main.addEventListener("keydown",e=>{const t=e.target;if(e.key==="Enter"&&t.classList&&t.classList.contains("qcard")){e.preventDefault();openSheet(t.dataset.id);return}if(e.key==="Enter"&&t.dataset.pa){e.preventDefault();t.closest(".proj").querySelector('[data-act="p-add"]').click()}
   if(e.key==="Enter"&&t.dataset.draft&&t.tagName==="INPUT"){e.preventDefault();clSave()}});
-main.addEventListener("submit",e=>{if(e.target.id==="np"){e.preventDefault();const inp=$("#np-in"),t=inp.value.trim();if(!t)return;const pid=newId();put(pid,{kind:"project",title:t,outcome:"",status:"active",created:Date.now()});ui.open[pid]=true;render();const f=$("#pa-"+pid);f&&f.focus();toast("Projeto criado. Defina a próxima ação.")}});
+main.addEventListener("submit",e=>{if(e.target.id==="nc"){e.preventDefault();const inp=$("#nc-in"),t=inp.value.trim();if(!t)return;put(newId(),{kind:"client",title:t,status:"active",created:Date.now()});toast("Cliente adicionado.");const f=$("#nc-in");f&&f.focus();return}
+  if(e.target.id==="np"){e.preventDefault();const inp=$("#np-in"),t=inp.value.trim();if(!t)return;const pid=newId();put(pid,{kind:"project",title:t,outcome:"",client:($("#np-cli")||{}).value||null,status:"active",created:Date.now()});ui.open[pid]=true;render();const f=$("#pa-"+pid);f&&f.focus();toast("Projeto criado. Defina a próxima ação.")}});
 
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
   if(a==="sign-in")signIn();else if(a==="sign-out"){auth.fb&&auth.fb.signOut()}else if(a==="import-local")importLocal();else if(a==="import-no"){ui.importN=0;render()}});
@@ -778,7 +894,13 @@ setInterval(()=>{if(!P.run||!S.loaded)return;const l=pleft();if(l<=0){pFinish();
   document.title=pfmt(l)+" · "+(P.phase==="focus"?"Foco":"Pausa");
 },1000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&P.run)wakeOn()});
-function route(){const h=location.hash.replace("#","");ui.view=VIEWS.some(v=>v.id===h)?h:"caixa";ui.confirmClear=false;render();window.scrollTo(0,0)}
+main.addEventListener("dragstart",e=>{const c=e.target.closest&&e.target.closest(".qcard");if(!c)return;e.dataTransfer.setData("text/plain",c.dataset.id);e.dataTransfer.effectAllowed="move";c.classList.add("dragging")});
+main.addEventListener("dragend",()=>{main.querySelectorAll(".dragging,.col.over").forEach(x=>x.classList.remove("dragging","over"))});
+main.addEventListener("dragover",e=>{const col=e.target.closest&&e.target.closest(".col");if(!col)return;e.preventDefault();main.querySelectorAll(".col.over").forEach(x=>x!==col&&x.classList.remove("over"));col.classList.add("over")});
+main.addEventListener("drop",e=>{const col=e.target.closest&&e.target.closest(".col");if(!col)return;e.preventDefault();const id=e.dataTransfer.getData("text/plain"),it=S.items.get(id),to=col.dataset.list;
+  if(!it||it.list===to){render();return}const ch={list:to};if(to==="scheduled"&&!it.date)ch.date=today();if(to==="waiting"&&!it.date)ch.date=addDays(3);
+  patch(id,ch);toast("Movido para "+LISTNAME[to]+".",()=>patch(id,{list:it.list,date:it.date||null}))});
+function route(){const h=location.hash.replace("#","");ui.view=VIEWS.some(v=>v.id===h)?h:"hoje";ui.confirmClear=false;render();window.scrollTo(0,0)}
 window.addEventListener("hashchange",route);
 route();boot();
 })();
