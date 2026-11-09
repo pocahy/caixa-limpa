@@ -152,6 +152,7 @@ textarea.inp{width:100%;min-height:90px;resize:vertical}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px)}
 #toast button{background:none;border:0;color:var(--accent-soft);font-weight:700;padding:0}
 
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;font-size:inherit}
 /* Pomodoro */
 .timer{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:22px 20px;display:flex;flex-direction:column;gap:14px;margin-bottom:8px}
 .timer.on{border-color:var(--accent)}
@@ -197,6 +198,7 @@ body.has-pombar #toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
+<script src="firebase-config.js"></script>
 </head><body>
 <header class="top">
   <div class="top-in">
@@ -206,6 +208,7 @@ body.has-pombar #toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
       <input id="cap-in" placeholder="Capturar: o que está na sua cabeça?" aria-label="Capturar um item na caixa de entrada">
       <button class="btn primary" type="submit">Capturar</button>
     </form>
+    <span id="acct"></span>
   </div>
 </header>
 
@@ -292,29 +295,60 @@ function startLocal(){
   store.put=()=>lsSave();store.del=()=>lsSave();
   S.loaded=true;lsSave();render();
 }
-function startDb(db,uid){
-  store.mode="db";
-  const col=db.collection("data/users/"+uid);
+function startDb(col,mode){
+  store.mode=mode||"db";let firstLive=true;
   const chains={};
   const q=(id,fn)=>{const p=(chains[id]||Promise.resolve()).then(fn).catch(e=>{toast("Não foi possível salvar ("+(e&&e.code||"erro")+"). Tente de novo.")});chains[id]=p;return p};
   store.put=(id,o)=>q(id,()=>col.doc(id).set(o));
   store.del=id=>q(id,()=>col.doc(id).delete());
   const timer=setTimeout(()=>{ui.statusMsg="Ainda conectando à sua conta… mostrando o que já foi carregado.";S.loaded=true;render()},10000);
   col.onSnapshot(snap=>{
-    if(!snap.metadata.fromCache){clearTimeout(timer);ui.statusMsg=""}
+    if(!snap.metadata.fromCache){clearTimeout(timer);ui.statusMsg="";if(firstLive){firstLive=false;if(store.mode==="cloud"&&snap.empty)ui.importN=localArr().length}}
     const m=new Map();snap.docs.forEach(d=>m.set(d.id,{...d.data(),id:d.id}));
     S.items=m;S.loaded=true;render();
   },err=>{clearTimeout(timer);ui.statusMsg="Não foi possível carregar suas tarefas ("+err.code+"). Recarregue a página.";S.loaded=true;render()});
 }
+function localArr(){try{const a=JSON.parse(localStorage.getItem(LSKEY)||"null");return Array.isArray(a)?a.filter(o=>o&&o.id&&!o.ex):[]}catch(e){return[]}}
+function importLocal(){const a=localArr();a.forEach(o=>{const id=o.id;const c={...o};delete c.id;S.items.set(id,{...c,id});store.put(id,c)});ui.importN=0;render();toast(a.length+" itens importados para sua conta.")}
+function loadScript(src){return new Promise((res,rej)=>{const el=document.createElement("script");el.src=src;el.onload=res;el.onerror=rej;document.head.appendChild(el)})}
+const FBV="10.12.2";
+const auth={mode:"none",user:null,fb:null};
+async function startFirebase(cfg){
+  try{for(const m of ["app","auth","firestore"])await loadScript("https://www.gstatic.com/firebasejs/"+FBV+"/firebase-"+m+"-compat.js")}
+  catch(e){ui.statusMsg="Não foi possível carregar o Firebase. Usando só este navegador.";return startLocal()}
+  firebase.initializeApp(cfg);const fdb=firebase.firestore();
+  try{fdb.settings({ignoreUndefinedProperties:true})}catch(e){}
+  try{await fdb.enablePersistence({synchronizeTabs:true})}catch(e){}
+  auth.fb=firebase.auth();auth.mode="firebase";
+  auth.fb.getRedirectResult().catch(authErr);
+  let started=false;
+  auth.fb.onAuthStateChanged(u=>{
+    if(started){if((u&&u.uid)!==(auth.user&&auth.user.uid))location.reload();return}
+    started=true;auth.user=u||null;
+    if(u)startDb(fdb.collection("users").doc(u.uid).collection("items"),"cloud");else startLocal();
+  });
+}
+async function signIn(){if(!auth.fb)return;const p=new firebase.auth.GoogleAuthProvider();
+  try{await auth.fb.signInWithPopup(p)}catch(e){if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"))return auth.fb.signInWithRedirect(p);authErr(e)}}
+function authErr(e){if(!e||e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request")return;
+  toast(e.code==="auth/unauthorized-domain"?"Este endereço não está autorizado no Firebase. Adicione o domínio em Authentication > Configurações > Domínios autorizados.":"Não foi possível entrar ("+(e.code||"erro")+").")}
+function acctHtml(){
+  if(store.mode==="cloud")return `Sincronizado com ${esc(auth.user&&auth.user.email||"sua conta Google")}. <button class="linkbtn" data-act="sign-out">Sair</button>`;
+  if(store.mode==="db")return "Salvo na sua conta e sincronizado entre dispositivos.";
+  if(auth.mode==="firebase")return `Salvo só neste navegador. <button class="linkbtn" data-act="sign-in">Entrar com Google</button> para sincronizar entre dispositivos.`;
+  return "Salvo só neste navegador."}
 async function boot(){
   render();
-  let t=0;while(!(window.claude&&typeof window.claude.use==="function")&&t<0){await new Promise(r=>setTimeout(r,100));t++}
-  if(!(window.claude&&typeof window.claude.use==="function"))return startLocal();
-  let db=null,user=null,uid=null;
-  try{[db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")])}catch(e){}
-  try{uid=user?await user.id():null}catch(e){}
-  if(!db||!uid)return startLocal();
-  startDb(db,uid);
+  if(window.parent!==window){let t=0;while(!(window.claude&&typeof window.claude.use==="function")&&t<15){await new Promise(r=>setTimeout(r,100));t++}}
+  if(window.claude&&typeof window.claude.use==="function"){
+    let db=null,user=null,uid=null;
+    try{[db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")])}catch(e){}
+    try{uid=user?await user.id():null}catch(e){}
+    if(db&&uid)return startDb(db.collection("data/users/"+uid),"db");
+  }
+  const cfg=window.FIREBASE_CONFIG;
+  if(cfg&&cfg.apiKey)return startFirebase(cfg);
+  startLocal();
 }
 
 /* ---------- exemplos ---------- */
@@ -623,7 +657,8 @@ function renderNav(){const c=counts();let h="";
   VIEWS.forEach(v=>{if(v.grp)h+=`<div class="grp">${v.grp}</div>`;
     const n=c[v.id],hot=c[v.id+"Hot"];const val=v.id==="agenda"&&c.agendaHot?c.agendaHot+"/"+n:v.id==="projetos"&&hot?hot+"!":n;
     h+=`<a href="#${v.id}" ${ui.view===v.id?'aria-current="page"':""}><span>${v.label}</span><span class="n ${hot?"hot":""}">${val===0?"":esc(val)}</span></a>`});
-  h+=`<div class="foot desk">${store.mode==="db"?"Salvo na sua conta e sincronizado entre dispositivos.":"Salvo só neste navegador."}</div>`;
+  h+=`<div class="foot desk">${acctHtml()}</div>`;
+  const ac=$("#acct");if(ac)ac.innerHTML=auth.mode==="firebase"&&store.mode==="local"&&S.loaded?`<button class="btn small" data-act="sign-in">Entrar</button>`:"";
   $("#nav").innerHTML=h}
 function render(){
   const a=document.activeElement,fid=a&&a.id&&$("#main").contains(a)?a.id:null;let s0,s1;try{s0=a.selectionStart;s1=a.selectionEnd}catch(e){}
@@ -631,9 +666,10 @@ function render(){
   let h="";
   if(ui.statusMsg)h+=`<div class="note"><span>${esc(ui.statusMsg)}</span></div>`;
   if(!S.loaded){$("#main").innerHTML=h+`<h1 class="view">Carregando…</h1><p class="lede">Buscando suas tarefas.</p>`;return}
+  if(ui.importN)h+=`<div class="note"><span>Há ${ui.importN} itens salvos só neste navegador. Quer levar para sua conta?</span><span style="display:flex;gap:8px"><button class="btn small primary" data-act="import-local">Importar</button><button class="btn small ghost" data-act="import-no">Agora não</button></span></div>`;
   if(hasExamples())h+=`<div class="note"><span>Você está vendo dados de exemplo. Teste à vontade e apague quando for começar.</span><button class="btn small" data-act="clear-ex">Apagar exemplos</button></div>`;
   const fn={caixa:vCaixa,proximas:vProximas,foco:vFoco,agenda:vAgenda,aguardando:vAguardando,projetos:vProjetos,"algum-dia":vAlgumDia,referencia:vReferencia,revisao:vRevisao,concluidas:vConcluidas}[ui.view]||vCaixa;
-  h+=fn();h+=`<div class="foot mob">${store.mode==="db"?"Salvo na sua conta e sincronizado entre dispositivos.":"Salvo só neste navegador."}</div>`;
+  h+=fn();h+=`<div class="foot mob">${acctHtml()}</div>`;
   $("#main").innerHTML=h;renderPomBar();
   if(fid){const el=document.getElementById(fid);if(el){el.focus();try{el.setSelectionRange(s0,s1)}catch(e){}}}
 }
@@ -730,6 +766,8 @@ main.addEventListener("keydown",e=>{const t=e.target;if(e.key==="Enter"&&t.datas
   if(e.key==="Enter"&&t.dataset.draft&&t.tagName==="INPUT"){e.preventDefault();clSave()}});
 main.addEventListener("submit",e=>{if(e.target.id==="np"){e.preventDefault();const inp=$("#np-in"),t=inp.value.trim();if(!t)return;const pid=newId();put(pid,{kind:"project",title:t,outcome:"",status:"active",created:Date.now()});ui.open[pid]=true;render();const f=$("#pa-"+pid);f&&f.focus();toast("Projeto criado. Defina a próxima ação.")}});
 
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
+  if(a==="sign-in")signIn();else if(a==="sign-out"){auth.fb&&auth.fb.signOut()}else if(a==="import-local")importLocal();else if(a==="import-no"){ui.importN=0;render()}});
 $("#pombar").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(b)pomAct(b.dataset.act)});
 setInterval(()=>{if(!P.run||!S.loaded)return;const l=pleft();if(l<=0){pFinish();return}
   document.querySelectorAll("[data-pclock]").forEach(el=>el.textContent=pfmt(l));
