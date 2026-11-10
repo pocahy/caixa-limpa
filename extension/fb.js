@@ -3,11 +3,26 @@ import { CFG } from "./config.js";
 
 const BASE = `https://firestore.googleapis.com/v1/projects/${CFG.projectId}/databases/(default)/documents`;
 
+// Descobre o ID do cliente Google configurado no Firebase (Authentication > Google).
+export async function clientId() {
+  if (CFG.googleClientId) return CFG.googleClientId;
+  const { clientId: saved } = await chrome.storage.local.get("clientId");
+  if (saved) return saved;
+  try {
+    const r = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=${CFG.apiKey}`);
+    const j = await r.json();
+    const g = (j.idpConfig || []).find(x => x.provider === "GOOGLE" && x.clientId);
+    if (g) { await chrome.storage.local.set({ clientId: g.clientId }); return g.clientId; }
+  } catch (e) {}
+  return "";
+}
+
 export async function signIn() {
-  if (!CFG.googleClientId) throw new Error("no_client_id");
+  const cid = await clientId();
+  if (!cid) throw new Error("no_client_id");
   const redirect = chrome.identity.getRedirectURL();
   const params = new URLSearchParams({
-    client_id: CFG.googleClientId,
+    client_id: cid,
     response_type: "id_token",
     redirect_uri: redirect,
     scope: "openid email profile",

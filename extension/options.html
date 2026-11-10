@@ -48,7 +48,8 @@ ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
   <section>
     <h2>Configuração do login (uma vez só)</h2>
     <ol>
-      <li>No Firebase Console, abra Authentication › Método de login › Google › "Configuração do SDK da Web" e copie o <b>ID do cliente da Web</b> para <code>config.js</code> (campo <code>googleClientId</code>).</li>
+      <li>O ID do cliente Google é buscado automaticamente no seu Firebase. Se o login disser que ele não foi encontrado, copie em Firebase › Authentication › Método de login › Google › "Configuração do SDK da Web" › <b>ID do cliente da Web</b> e cole aqui:
+        <div class="row" style="margin-top:8px"><input class="inp" id="cid" placeholder="123456-abc.apps.googleusercontent.com" style="flex:1 1 280px"><button class="btn" id="cid-save" type="button">Salvar ID</button></div><span id="cid-msg" class="small muted"></span></li>
       <li>No Google Cloud Console (projeto caixa-limpa), abra APIs e serviços › Credenciais › "Web client (auto created by Google Service)" e adicione o URI de redirecionamento autorizado: <code id="redir"></code></li>
       <li>Em Authentication › Configurações › Domínios autorizados, adicione <code id="dom"></code></li>
     </ol>

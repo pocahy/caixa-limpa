@@ -23,12 +23,23 @@ $("#main").innerHTML = `
   </form>
   <div id="todaybox"></div>`;
 
+function showAuthError(e) {
+  let msg;
+  if (e === "no_client_id") msg = "Não encontrei o ID do cliente Google do seu Firebase. Cole o ID em Opções.";
+  else if (/redirect_uri_mismatch|Authorization page could not be loaded/i.test(e)) msg = "O Google recusou o login: falta autorizar o endereço da extensão no Google Cloud (passo 2 em Opções).";
+  else if (/canceled|cancelled|did not approve|closed/i.test(e)) msg = "Login cancelado.";
+  else if (/UNAUTHORIZED_DOMAIN|INVALID_IDP_RESPONSE/i.test(e)) msg = "O Firebase recusou o login: adicione o domínio da extensão em Domínios autorizados (passo 3 em Opções).";
+  else msg = "Não foi possível entrar: " + e;
+  renderAuth();
+  const box = $("#authbox .card");
+  if (box) box.insertAdjacentHTML("beforeend", `<p class="small" style="margin:0;color:var(--warn)">${esc(msg)}</p><button class="btn small" data-a="options" type="button">Abrir Opções</button>`);
+}
 function renderAuth() {
   const box = $("#authbox");
   if (st.auth) { box.innerHTML = st.syncErr ? `<div class="note"><span>Não foi possível sincronizar agora. Tentando de novo em 1 min.</span></div>` : ""; return; }
   box.innerHTML = `<div class="card"><h3>Conecte sua conta</h3>
     <p class="muted" style="margin:0">Entre com a mesma conta Google do site para ver suas tarefas e sincronizar o Pomodoro com o app.</p>
-    ${CFG.googleClientId ? `<button class="btn primary" data-a="signin" type="button">Entrar com Google</button>` : `<p class="small" style="margin:0;color:var(--warn)">Falta o ID do cliente Google em config.js. Veja as instruções em Opções.</p>`}
+    <button class="btn primary" data-a="signin" type="button">Entrar com Google</button>
     <p class="small muted" style="margin:0">O timer funciona mesmo sem entrar.</p></div>`;
 }
 
@@ -120,7 +131,13 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("[data-a]"); if (!b) return;
   const a = b.dataset.a, id = b.closest("[data-id]") && b.closest("[data-id]").dataset.id;
   switch (a) {
-    case "signin": b.disabled = true; b.textContent = "Abrindo login…"; await send({ type: "signin" }); load(); break;
+    case "signin": {
+      b.disabled = true; b.textContent = "Abrindo login…";
+      const r = await chrome.runtime.sendMessage({ type: "signin" }).catch(e => ({ ok: false, error: String(e) }));
+      if (!r || !r.ok) showAuthError((r && r.error) || "erro");
+      else load();
+      break;
+    }
     case "signout": await send({ type: "signout" }); load(); break;
     case "options": chrome.runtime.openOptionsPage(); break;
     case "open": send({ type: "open", hash: b.dataset.hash || "hoje" }); window.close(); break;

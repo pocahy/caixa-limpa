@@ -14,9 +14,9 @@ async function loadAcct() {
     $("#acct-acts").innerHTML = `<button class="btn" id="out" type="button">Sair</button>`;
     $("#out").onclick = async () => { await chrome.runtime.sendMessage({ type: "signout" }); loadAcct(); };
   } else {
-    $("#acct").textContent = CFG.googleClientId ? "Não conectado." : "Não conectado. Falta o ID do cliente Google em config.js (veja a configuração abaixo).";
-    $("#acct-acts").innerHTML = CFG.googleClientId ? `<button class="btn primary" id="in" type="button">Entrar com Google</button>` : "";
-    if ($("#in")) $("#in").onclick = async () => {
+    $("#acct").textContent = "Não conectado.";
+    $("#acct-acts").innerHTML = `<button class="btn primary" id="in" type="button">Entrar com Google</button>`;
+    $("#in").onclick = async () => {
       const r = await chrome.runtime.sendMessage({ type: "signin" });
       if (!r || !r.ok) $("#acct").textContent = "Não foi possível entrar: " + ((r && r.error) || "erro");
       loadAcct();
@@ -43,4 +43,14 @@ $("#save").onclick = async () => {
 };
 $("#shortcuts").onclick = () => chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
 
-loadAcct(); loadBlock();
+async function loadCid() {
+  const { clientId } = await chrome.storage.local.get("clientId");
+  $("#cid").value = CFG.googleClientId || clientId || "";
+}
+$("#cid-save").onclick = async () => {
+  const v = $("#cid").value.trim();
+  if (v && !/\.apps\.googleusercontent\.com$/.test(v)) { $("#cid-msg").textContent = "Esse não parece um ID de cliente (termina com .apps.googleusercontent.com)."; return; }
+  if (v) await chrome.storage.local.set({ clientId: v }); else await chrome.storage.local.remove("clientId");
+  $("#cid-msg").textContent = "Salvo.";
+};
+loadAcct(); loadBlock(); loadCid();
