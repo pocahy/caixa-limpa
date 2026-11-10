@@ -337,7 +337,7 @@ function startDb(col,mode){
   col.onSnapshot(snap=>{
     if(!snap.metadata.fromCache){clearTimeout(timer);ui.statusMsg="";if(firstLive){firstLive=false;if(store.mode==="cloud"&&snap.empty)ui.importN=localArr().length}}
     const m=new Map();snap.docs.forEach(d=>m.set(d.id,{...d.data(),id:d.id}));
-    S.items=m;S.loaded=true;render();
+    S.items=m;S.loaded=true;const td=m.get("timer");if(td&&td.dev!==DEV&&(td.upd||0)>(P.upd||0))adoptTimer(td);render();
   },err=>{clearTimeout(timer);ui.statusMsg="Não foi possível carregar suas tarefas ("+err.code+"). Recarregue a página.";S.loaded=true;render()});
 }
 function localArr(){try{const a=JSON.parse(localStorage.getItem(LSKEY)||"null");return Array.isArray(a)?a.filter(o=>o&&o.id&&!o.ex):[]}catch(e){return[]}}
@@ -667,11 +667,16 @@ function vConcluidas(){
 
 /* ---------- pomodoro ---------- */
 const PKEY="caixa-limpa-pom";
+const DEV=(()=>{try{let d=localStorage.getItem("caixa-limpa-dev");if(!d){d="web-"+Math.random().toString(36).slice(2,10);localStorage.setItem("caixa-limpa-dev",d)}return d}catch(e){return "web-"+Math.random().toString(36).slice(2,10)}})();
+const TKEYS=["phase","run","endAt","left","task","cycle","intr","await","sid","upd","dev"];
 const PDEF={focus:25,short:5,long:15,every:4};
 const pset=()=>({...PDEF,...(meta().pom||{})});
 let P={phase:"idle",run:false,endAt:0,left:0,task:null,cycle:0,intr:0,await:null};
 try{const s=JSON.parse(localStorage.getItem(PKEY)||"null");if(s&&typeof s==="object")P={...P,...s}}catch(e){}
-function psave(){try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){}}
+function plocal(){try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){}}
+function psave(){P.upd=Date.now();P.dev=DEV;plocal();
+  if(store.mode!=="local"){const o={kind:"timer"};TKEYS.forEach(k=>o[k]=P[k]===undefined?null:P[k]);S.items.set("timer",{...o,id:"timer"});store.put("timer",o)}}
+function adoptTimer(t){TKEYS.forEach(k=>{if(k in t)P[k]=t[k]});plocal();if(P.run)wakeOn();else wakeOff()}
 function plen(ph){const s=pset();return (ph==="focus"?s.focus:ph==="short"?s.short:s.long)*60000}
 function pleft(){return P.run?Math.max(0,P.endAt-Date.now()):(P.left||0)}
 function pfmt(ms){const s=Math.ceil(ms/1000);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
@@ -682,19 +687,20 @@ function beep(){try{unlockAudio();[0,.35,.7].forEach((t,i)=>{const o=actx.create
 async function wakeOn(){try{if(navigator.wakeLock&&!wake){wake=await navigator.wakeLock.request("screen");wake.addEventListener("release",()=>{wake=null})}}catch(e){}}
 function wakeOff(){try{wake&&wake.release()}catch(e){}wake=null}
 function validTask(){const t=P.task&&S.items.get(P.task);if(!t||t.kind!=="item"||t.list==="done")P.task=null}
-function pStart(ph,task){unlockAudio();if(task!==undefined)P.task=task;validTask();P.phase=ph;P.run=true;P.endAt=Date.now()+plen(ph);P.left=plen(ph);P.await=null;if(ph==="focus")P.intr=0;psave();wakeOn();render()}
+function pStart(ph,task){unlockAudio();if(task!==undefined)P.task=task;validTask();P.phase=ph;P.run=true;P.endAt=Date.now()+plen(ph);P.left=plen(ph);P.await=null;if(ph==="focus"){P.intr=0;P.sid=newId()}psave();wakeOn();render()}
 function pPause(){if(!P.run)return;P.left=pleft();P.run=false;psave();render()}
 function pResume(){if(P.run||P.phase==="idle")return;unlockAudio();P.endAt=Date.now()+P.left;P.run=true;psave();wakeOn();render()}
 function pStop(){P.phase="idle";P.run=false;P.await=null;P.left=0;psave();wakeOff();render()}
-function logPom(taskId,ms,intr){const m=meta(),day=today(),log={...(m.pomLog||{})},d=log[day]||{n:0,min:0,s:[]};
+function logPom(taskId,ms,intr,sid){const m=meta(),day=today(),log={...(m.pomLog||{})},d=log[day]||{n:0,min:0,s:[]};
+  if(sid&&(d.s||[]).some(x=>x.sid===sid))return;
   const it=taskId&&S.items.get(taskId);
-  log[day]={n:d.n+1,min:d.min+Math.round(ms/60000),s:(d.s||[]).concat({t:taskId||null,title:it?it.title:"Sem tarefa específica",at:Date.now(),intr:intr||0}).slice(-40)};
+  log[day]={n:d.n+1,min:d.min+Math.round(ms/60000),s:(d.s||[]).concat({t:taskId||null,title:it?it.title:"Sem tarefa específica",at:Date.now(),intr:intr||0,sid:sid||null}).slice(-40)};
   const keys=Object.keys(log).sort();while(keys.length>60)delete log[keys.shift()];
   put("meta",{...m,kind:"meta",pomLog:log});
   if(it)patch(taskId,{poms:(it.poms||0)+1});
 }
 function pFinish(){const ph=P.phase;P.run=false;P.left=0;beep();wakeOff();
-  if(ph==="focus"){P.cycle=(P.cycle||0)+1;P.await="focus-end";psave();logPom(P.task,plen("focus"),P.intr);toast("Pomodoro concluído. Hora da pausa.")}
+  if(ph==="focus"){P.cycle=(P.cycle||0)+1;P.await="focus-end";psave();logPom(P.task,plen("focus"),P.intr,P.sid);toast("Pomodoro concluído. Hora da pausa.")}
   else{if(ph==="long")P.cycle=0;P.await="break-end";psave();toast("Pausa terminada.")}
   render()}
 function pomAct(act,id){const s=pset();
@@ -707,7 +713,7 @@ function pomAct(act,id){const s=pset();
    case"pom-open":location.hash="foco";break;
    case"pom-item":if(P.phase==="idle"||P.await)pStart("focus",id);else{P.task=id;psave()}if(location.hash==="#foco")render();else location.hash="foco";break;
    case"pom-taskdone":{const el=plen("focus")-pleft(),tid=P.task;P.run=false;P.left=0;P.await="focus-end";wakeOff();
-     if(el>=60000){P.cycle=(P.cycle||0)+1;psave();logPom(tid,el,P.intr)}else psave();
+     if(el>=60000){P.cycle=(P.cycle||0)+1;psave();logPom(tid,el,P.intr,P.sid)}else psave();
      if(tid)complete(tid);P.task=null;psave();render();break}
    case"pom-done-task":if(P.task){complete(P.task);P.task=null;psave();render()}break;
   }}

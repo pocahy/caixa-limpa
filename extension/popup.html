@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Caixa Limpa</title>
+<link rel="stylesheet" href="ui.css">
+<style>
+body{width:372px;min-height:200px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 10px;border-bottom:1px solid var(--line)}
+.brand{font-weight:800;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:7px}
+.brand i{width:12px;height:12px;border-radius:3px;border:2.5px solid var(--accent)}
+main{padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px}
+.timer{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.timer.focus{border-color:var(--accent)}
+.timer.brk{border-color:var(--rest)}
+.ph{display:flex;justify-content:space-between;align-items:center;color:var(--accent)}
+.timer.brk .ph{color:var(--rest)}
+.clock{font-family:var(--f-mono);font-weight:500;font-size:52px;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.meter{height:5px;border-radius:9px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.timer.brk .meter i{background:var(--rest)}
+.dots{display:inline-flex;gap:5px}
+.dots i{width:8px;height:8px;border-radius:50%;border:2px solid currentColor}
+.dots i.on{background:currentColor}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+form.cap{display:flex;gap:6px}
+#authbox:empty,#todaybox:empty{display:none}
+#todaybox{display:flex;flex-direction:column;gap:14px}
+section h2{margin:0 0 4px;display:flex;justify-content:space-between}
+ul{list-style:none;margin:0;padding:0}
+li.row{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+li.row:last-child{border-bottom:0}
+.check{flex:none;width:20px;height:20px;margin-top:1px;border-radius:50%;border:2px solid var(--muted);background:transparent;padding:0}
+.check:hover{border-color:var(--accent);background:var(--accent-soft)}
+.rm{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.rm .t{overflow-wrap:anywhere}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.rs{flex:none;display:flex;gap:4px}
+.note{background:var(--surface-2);border-radius:10px;padding:9px 11px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card h3{margin:0;font-size:15px}
+footer{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);font-size:12px}
+footer .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+#toast{position:fixed;left:12px;right:12px;bottom:12px;background:var(--ink);color:var(--bg);border-radius:10px;padding:9px 12px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><i aria-hidden="true"></i>Caixa Limpa</div>
+  <button class="btn small" id="open" type="button">Abrir app</button>
+</header>
+<main id="main"></main>
+<footer id="foot"></footer>
+<div id="toast" hidden role="status"></div>
+<script type="module" src="popup.js"></script>
+</body>
+</html>

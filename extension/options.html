@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Opções · Caixa Limpa</title>
+<link rel="stylesheet" href="ui.css">
+<style>
+body{padding:32px 16px 48px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{margin:0;font-size:28px;letter-spacing:-.02em}
+section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+h2{margin:0;font-size:17px}
+p{margin:0;max-width:62ch}
+textarea{width:100%;min-height:130px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-family:var(--f-mono);font-size:13px;resize:vertical}
+code{font-family:var(--f-mono);font-size:12.5px;background:var(--surface-2);padding:2px 6px;border-radius:6px;overflow-wrap:anywhere}
+label.tg{display:flex;gap:10px;align-items:center;font-weight:700}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+kbd{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px}
+ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div><span class="lbl">Caixa Limpa</span><h1>Opções da extensão</h1></div>
+
+  <section>
+    <h2>Conta</h2>
+    <p id="acct" class="muted">Carregando…</p>
+    <div class="row" id="acct-acts"></div>
+  </section>
+
+  <section>
+    <h2>Bloquear sites durante o foco</h2>
+    <p class="muted">Enquanto um pomodoro de foco estiver rodando, estes sites mostram uma tela de "Você está em foco". Um domínio por linha; subdomínios entram junto.</p>
+    <label class="tg"><input type="checkbox" id="block-on"> Bloquear durante o foco</label>
+    <textarea id="domains" placeholder="instagram.com&#10;youtube.com&#10;x.com&#10;linkedin.com"></textarea>
+    <div class="row"><button class="btn primary" id="save" type="button">Salvar</button><span id="saved" class="small muted"></span></div>
+  </section>
+
+  <section>
+    <h2>Atalhos</h2>
+    <p><kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> abre o popup. <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> inicia, pausa ou continua o Pomodoro.</p>
+    <p>Na barra de endereço, digite <kbd>cl</kbd>, espaço e o texto para mandar direto para a caixa de entrada. Com o botão direito em um texto, link ou página, use "Enviar para o Caixa Limpa".</p>
+    <div class="row"><button class="btn" id="shortcuts" type="button">Mudar atalhos</button></div>
+  </section>
+
+  <section>
+    <h2>Configuração do login (uma vez só)</h2>
+    <ol>
+      <li>No Firebase Console, abra Authentication › Método de login › Google › "Configuração do SDK da Web" e copie o <b>ID do cliente da Web</b> para <code>config.js</code> (campo <code>googleClientId</code>).</li>
+      <li>No Google Cloud Console (projeto caixa-limpa), abra APIs e serviços › Credenciais › "Web client (auto created by Google Service)" e adicione o URI de redirecionamento autorizado: <code id="redir"></code></li>
+      <li>Em Authentication › Configurações › Domínios autorizados, adicione <code id="dom"></code></li>
+    </ol>
+    <p class="small muted">ID desta extensão: <code id="extid"></code></p>
+  </section>
+</div>
+<script type="module" src="options.js"></script>
+</body>
+</html>
