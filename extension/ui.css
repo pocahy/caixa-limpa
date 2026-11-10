@@ -8,6 +8,7 @@
   --bg:#0e1412; --surface:#151d1a; --surface-2:#1e2925; --ink:#e5eeea; --muted:#93a59e; --line:#29362f;
   --accent:#4fc4a3; --accent-ink:#05241b; --accent-soft:#163a30; --warn:#f0a25c; --warn-soft:#3a2614; --rest:#8db4ec; color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 var(--f-body)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}

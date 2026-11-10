@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Caixa Limpa",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Pomodoro, captura rápida e o seu dia do Caixa Limpa (GTD) direto no navegador.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArigM23pACeCPyXX06mJF2xBuL+60ZbCYsBGHE1CLGjT0lqmHh5xZsK10Ipzzmxaw5DVmkDc2Hgx1J8501OfKVhCBYxxSHTsCgFDghtciP7wWFrIysnOIyvNTrJUfL59meZSQMA7Gwz/Bcw2q+7/Q4rx0FEuHx28cBxYl6n09p6JNEQwx4Ir9tIr8aABIjNl4v5FtuSrzKfM0oipLT+hMlISsMijo9bxrrxgu5ThxIqcJz+/1KT92Znop/ZUTmMN9DRBnamNCBfvHCK+wekqomfB8gw6FRJJbDXZjh3IWQyjUvbP8HA/dib2vlsegTurZUkcK+5pHjRIZmehgWmE8xQIDAQAB",
   "icons": {
