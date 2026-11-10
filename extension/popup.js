@@ -39,7 +39,9 @@ function renderAuth() {
   if (st.auth) { box.innerHTML = st.syncErr ? `<div class="note"><span>Não foi possível sincronizar agora. Tentando de novo em 1 min.</span></div>` : ""; return; }
   box.innerHTML = `<div class="card"><h3>Conecte sua conta</h3>
     <p class="muted" style="margin:0">Entre com a mesma conta Google do site para ver suas tarefas e sincronizar o Pomodoro com o app.</p>
-    <button class="btn primary" data-a="signin" type="button">Entrar com Google</button>
+    <button class="btn primary" data-a="open" data-hash="hoje" type="button">Conectar pelo site</button>
+    <p class="small muted" style="margin:0">Abra o Caixa Limpa neste navegador, conectado com sua conta Google. A extensão entra junto em alguns segundos.</p>
+    <button class="btn small ghost" data-a="signin" type="button" style="align-self:flex-start">Entrar direto com Google</button>
     <p class="small muted" style="margin:0">O timer funciona mesmo sem entrar.</p></div>`;
 }
 

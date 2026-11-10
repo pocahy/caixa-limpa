@@ -14,7 +14,10 @@ Companheira do app [Caixa Limpa](https://pocahy.github.io/caixa-limpa/): Pomodor
 2. Abra `chrome://extensions`, ligue **Modo do desenvolvedor** e clique em **Carregar sem compactação**, escolhendo a pasta.
 3. O ID deve ser `bjcjjdfhjaanbfafmhebncfbocdojkhk` (fixo pela chave do manifest).
 
-## Configurar o login (uma vez)
+## Entrar
+O jeito mais simples: abra o [Caixa Limpa](https://pocahy.github.io/caixa-limpa/) neste navegador, conectado com sua conta Google. A extensão aproveita esse login em alguns segundos, sem nenhuma configuração.
+
+## Login direto com Google (opcional)
 1. Firebase Console › Authentication › Método de login › Google › "Configuração do SDK da Web": copie o **ID do cliente da Web** para `config.js` (`googleClientId`).
 2. Google Cloud Console (projeto caixa-limpa) › APIs e serviços › Credenciais › "Web client (auto created by Google Service)" › URIs de redirecionamento autorizados: adicione `https://bjcjjdfhjaanbfafmhebncfbocdojkhk.chromiumapp.org/`
 3. Firebase › Authentication › Configurações › Domínios autorizados: adicione `bjcjjdfhjaanbfafmhebncfbocdojkhk.chromiumapp.org`

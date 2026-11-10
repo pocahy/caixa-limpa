@@ -26,8 +26,9 @@ async function loadAcct(showCid) {
     $("#out").onclick = async () => { await chrome.runtime.sendMessage({ type: "signout" }); loadAcct(); };
     return;
   }
-  $("#acct").textContent = "Não conectado.";
-  $("#acct-acts").innerHTML = `<button class="btn primary" id="in" type="button">Entrar com Google</button>`;
+  $("#acct").textContent = "Não conectado. O jeito mais simples: abra o Caixa Limpa neste navegador, conectado com sua conta Google, e a extensão entra junto.";
+  $("#acct-acts").innerHTML = `<button class="btn primary" id="site" type="button">Abrir o Caixa Limpa</button><button class="btn" id="in" type="button">Entrar direto com Google</button>`;
+  $("#site").onclick = () => chrome.runtime.sendMessage({ type: "open", hash: "hoje" });
   $("#in").onclick = async () => {
     const b = $("#in"); b.disabled = true; b.textContent = "Abrindo login…"; $("#acct-err").hidden = true;
     const r = await chrome.runtime.sendMessage({ type: "signin" }).catch(e => ({ ok: false, error: String(e) }));

@@ -261,6 +261,14 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       case "signin": await signIn(); await sync(); return { ok: true };
       case "signout": await signOut(); return { ok: true };
       case "site-timer": await adopt(msg.t); return { ok: true };
+      case "site-auth": {
+        const a = msg.auth, { auth } = await chrome.storage.local.get("auth");
+        if (!a || !a.uid || !a.refreshToken || auth) return { ok: true };
+        await chrome.storage.local.set({ auth: { uid: a.uid, email: a.email, refreshToken: a.refreshToken, idToken: "", exp: 0, via: "site" } });
+        try { await getAuth(); await sync(); }
+        catch (e) { await chrome.storage.local.remove("auth"); }
+        return { ok: true };
+      }
     }
     return { ok: false };
   })().then(reply, e => reply({ ok: false, error: String((e && e.message) || e) }));
